@@ -1,12 +1,11 @@
 package br.com.alura.leilao.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +32,13 @@ class GeradorDePagamentoTest {
 	@Captor
 	private ArgumentCaptor<Pagamento> captor;
 	
+	@Mock
+	private Clock clock;
+	
 	@BeforeEach
 	public void beforeEach() {
 		MockitoAnnotations.initMocks(this);
-		this.geradorDePagamento = new GeradorDePagamento(pagamentoDao);
+		this.geradorDePagamento = new GeradorDePagamento(pagamentoDao, clock);
 	}
 	
 
@@ -44,13 +46,17 @@ class GeradorDePagamentoTest {
 	void deveriaCriarPagamentoParaVencedorDoLeilao() {
 		Leilao leilao = leilao();
 		Lance lanceVencedor = leilao.getLanceVencedor();
-		geradorDePagamento.gerarPagamento(lanceVencedor);
 		
+		LocalDate data = LocalDate.of(2021, 1, 23);
+		Instant instant = data.atStartOfDay(ZoneId.systemDefault()).toInstant();
+		Mockito.when(clock.instant()).thenReturn(instant);
+		Mockito.when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
+		geradorDePagamento.gerarPagamento(lanceVencedor);
 		Mockito.verify(pagamentoDao).salvar(captor.capture());
 	
 		Pagamento pagamento = captor.getValue();
 		
-		Assert.assertEquals(LocalDate.now().plusDays(1), pagamento.getVencimento());
 		Assert.assertEquals(lanceVencedor.getValor(), pagamento.getValor());
 		Assert.assertFalse(pagamento.getPago());
 		Assert.assertEquals(lanceVencedor.getUsuario(), pagamento.getUsuario());
