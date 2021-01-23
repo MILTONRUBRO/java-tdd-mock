@@ -2,6 +2,7 @@ package br.com.alura.leilao.service;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -47,8 +48,9 @@ class GeradorDePagamentoTest {
 		Leilao leilao = leilao();
 		Lance lanceVencedor = leilao.getLanceVencedor();
 		
-		LocalDate data = LocalDate.of(2021, 1, 23);
+		LocalDate data = LocalDate.now();
 		Instant instant = data.atStartOfDay(ZoneId.systemDefault()).toInstant();
+		
 		Mockito.when(clock.instant()).thenReturn(instant);
 		Mockito.when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
@@ -61,6 +63,7 @@ class GeradorDePagamentoTest {
 		Assert.assertFalse(pagamento.getPago());
 		Assert.assertEquals(lanceVencedor.getUsuario(), pagamento.getUsuario());
 		Assert.assertEquals(leilao, pagamento.getLeilao());
+		Assert.assertEquals(proximoDiaUtil(data), pagamento.getVencimento());
 	}
 	
 	private Leilao leilao(){
@@ -71,6 +74,18 @@ class GeradorDePagamentoTest {
 		leilao.setLanceVencedor(primeiro);
 		
 		return leilao;
+	}
+	
+	private LocalDate proximoDiaUtil(LocalDate vencimento) {
+		DayOfWeek diaDaSemana = vencimento.getDayOfWeek();
+		
+		if(diaDaSemana == DayOfWeek.SATURDAY) {
+			return vencimento.plusDays(2);
+		}else if(diaDaSemana == DayOfWeek.SUNDAY) {
+			return vencimento.plusDays(1);
+		}
+		
+		return vencimento;
 	}
 
 }
